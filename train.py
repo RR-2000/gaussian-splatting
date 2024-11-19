@@ -21,6 +21,7 @@ import uuid
 from tqdm import tqdm
 from utils.image_utils import psnr
 from argparse import ArgumentParser, Namespace
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from arguments import ModelParams, PipelineParams, OptimizationParams
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -63,7 +64,12 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     use_sparse_adam = opt.optimizer_type == "sparse_adam" and SPARSE_ADAM_AVAILABLE 
     depth_l1_weight = get_expon_lr_func(opt.depth_l1_weight_init, opt.depth_l1_weight_final, max_steps=opt.iterations)
 
-    viewpoint_stack = scene.getTrainCameras().copy()
+    if args.load_image_on_the_fly:
+        viewpoint_stack = scene.getTrainCameras()
+        sampler = RandomSampler(viewpoint_stack, replacement=True, num_samples=opt.iterations)
+        viewpoint_stack_loader = iter(DataLoader(viewpoint_stack, sampler=sampler, batch_size=1, num_workers = opt.num_workers, collate_fn=list))
+    else:
+        viewpoint_stack = scene.getTrainCameras().copy()
     viewpoint_indices = list(range(len(viewpoint_stack)))
     ema_loss_for_log = 0.0
     ema_Ll1depth_for_log = 0.0
@@ -95,12 +101,21 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
             gaussians.oneupSHdegree()
 
         # Pick a random Camera
-        if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()
-            viewpoint_indices = list(range(len(viewpoint_stack)))
-        rand_idx = randint(0, len(viewpoint_indices) - 1)
-        viewpoint_cam = viewpoint_stack.pop(rand_idx)
-        vind = viewpoint_indices.pop(rand_idx)
+        if args.load_image_on_the_fly:
+            if len(viewpoint_stack_loader) == 0:
+                viewpoint_stack = scene.getTrainCameras()
+                sampler = RandomSampler(viewpoint_stack, replacement=True, num_samples=opt.iterations)
+                viewpoint_stack_loader = iter(DataLoader(viewpoint_stack, sampler=sampler, batch_size=1, num_workers = opt.num_workers, collate_fn=list))
+            # rand_idx = randint(0, len(viewpoint_indices) - 1)
+            viewpoint_cam = next(viewpoint_stack_loader)
+            # vind = next(viewpoint_stack_loader)
+        else:
+            if not viewpoint_stack:
+                viewpoint_stack = scene.getTrainCameras().copy()
+                viewpoint_indices = list(range(len(viewpoint_stack)))
+            rand_idx = randint(0, len(viewpoint_indices) - 1)
+            viewpoint_cam = viewpoint_stack.pop(rand_idx)
+            vind = viewpoint_indices.pop(rand_idx)
 
         # Render
         if (iteration - 1) == debug_from:
