@@ -49,6 +49,7 @@ class CameraInfo(NamedTuple):
     is_test: bool
     depth_path: Optional[str] = None
     K: Optional[np.array] = None
+    mask: Optional[np.array] = None
     white_background: Optional[bool] = False
 
 class SceneInfo(NamedTuple):
@@ -377,12 +378,11 @@ def readBrics(datadir, split, time: int = 0, downsample: int = 1, white_backgrou
             [0, 0, 1]]
         )
         cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, K=K,
-            image = image if not load_image_on_the_fly else None,
+            image = image if not load_image_on_the_fly else None, mask = mask,
             image_path=img_path, image_name=image_name, is_test = True if split == 'test' else False,
             width=image.size[0], height=image.size[1], white_background = white_background, depth_params = None)
         uid += 1
-        if timestamp == 0:
-            camera_dict[cam_name] = cam_info # needed for video camera
+        camera_dict[cam_name] = cam_info # needed for video camera
         cam_infos.append(cam_info)
     return cam_infos, camera_dict
 

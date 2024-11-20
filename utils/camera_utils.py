@@ -96,7 +96,7 @@ def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic = False, is_
 
     if cam_info.image_path is None:
         
-        return Camera((cam_info.width, cam_info.height), colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, 
+        return Camera((cam_info.width, cam_info.height), colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, K=cam_info.K,
                   FoVx=cam_info.FovX, FoVy=cam_info.FovY, depth_params=cam_info.depth_params,
                   image=None, invdepthmap=None, data_device=args.data_device if not args.load2gpu_on_the_fly else 'cpu',
                   image_name=cam_info.image_name, uid=id,
@@ -128,7 +128,7 @@ def loadCam(args, id, cam_info, resolution_scale, is_nerf_synthetic = False, is_
 
     
 
-    return Camera(resolution, colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, 
+    return Camera(resolution, colmap_id=cam_info.uid, R=cam_info.R, T=cam_info.T, K=cam_info.K,
                   FoVx=cam_info.FovX, FoVy=cam_info.FovY, depth_params=cam_info.depth_params,
                   image=image, invdepthmap=invdepthmap,
                   image_name=cam_info.image_name, uid=id, data_device=args.data_device,

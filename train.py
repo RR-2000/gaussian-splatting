@@ -107,7 +107,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                 sampler = RandomSampler(viewpoint_stack, replacement=True, num_samples=opt.iterations)
                 viewpoint_stack_loader = iter(DataLoader(viewpoint_stack, sampler=sampler, batch_size=1, num_workers = opt.num_workers, collate_fn=list))
             # rand_idx = randint(0, len(viewpoint_indices) - 1)
-            viewpoint_cam = next(viewpoint_stack_loader)
+            viewpoint_cam = next(viewpoint_stack_loader)[0]
             # vind = next(viewpoint_stack_loader)
         else:
             if not viewpoint_stack:
@@ -288,6 +288,7 @@ if __name__ == "__main__":
     print("Optimizing " + args.model_path)
 
     # Initialize system state (RNG)
+    torch.multiprocessing.set_start_method('spawn')
     safe_state(args.quiet)
 
     # Start GUI server, configure and run training
